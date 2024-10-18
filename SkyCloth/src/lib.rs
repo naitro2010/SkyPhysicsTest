@@ -105,6 +105,9 @@ __kernel void deform_mud(unsigned int vertex_stride,unsigned int pos_offset,unsi
             }
             float u=((orig_position.z-deform_pos.z)/deform_vec.z);
             float3 plane_point=(u*deform_vec.xyz)+deform_pos.xyz;
+            if ((deform_pos.z-orig_position.z) <= 0.0) {
+                deform_pos.z=orig_position.z+0.01;
+            }
             if (length(plane_point.z-deform_pos.z) > 69.99125119*max_vertical_deform_distance_meters) {
                 continue;
             }
