@@ -33,9 +33,6 @@ jobs:
               cd ..
               move target/release/SkyCloth.dll ${{github.workspace}}/SkyCloth.dll
               move target/release/SkyCloth.lib ${{github.workspace}}/SkyCloth.lib
-      - uses: actions/upload-artifact@v4
-        with:    
-          path: 
       - name: Run CMake
         uses: lukka/run-cmake@v10
         with:
