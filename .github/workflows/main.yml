@@ -33,7 +33,7 @@ jobs:
               cargo +nightly build --release
               cd ..
               move SkyCloth/target/release/SkyCloth.dll ${{github.workspace}}/SkyCloth.dll
-              move SkyCloth/target/release/SkyCloth.lib ${{github.workspace}}/SkyCloth.lib
+              move SkyCloth/target/release/SkyCloth.dll.lib ${{github.workspace}}/SkyCloth.dll.lib
       - name: Run CMake
         uses: lukka/run-cmake@v10
         with:
@@ -50,6 +50,7 @@ jobs:
           move ../SkyPhysicsTest.dll
           move ../SkyPhysicsTest.pdb
           move ${{github.workspace}}/SkyCloth.dll
+          move ${{github.workspace}}/SkyCloth.dll.lib
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with: 
