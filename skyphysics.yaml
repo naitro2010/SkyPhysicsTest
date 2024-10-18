@@ -1,0 +1,47 @@
+name: skyphysics
+alias: skyphys
+script: SkyPhysics
+help: commands for testing skyphysics
+subs:
+  - name: AttachMudPhysics
+    alias: amp
+    func: AttachMudPhysics
+    help: amp -t actor --fo falloff -m magnitude -f frequency -s speed
+    args:
+      - name: --target
+        alias: -t
+        type: actor
+        selected: true
+        required: true
+        help: the actor to attach mud physics to
+      - name: --falloff
+        alias: --fo
+        type: float
+        required: true
+        help: falloff constant
+      - name: --magnitude
+        alias: -m
+        type: float
+        required: true
+        help: wave magnitude
+      - name: --frequency
+        alias: -f
+        type: float
+        required: true
+        help: wave frequency   
+      - name: --speed
+        alias: -s
+        type: float
+        required: true
+        help: speed of wave time per meter        
+  - name: DetachMudPhysics
+    alias: dmp
+    func: DetachMudPhysics
+    help: Detaches Mud Physics from Actor
+    args:
+      - name: --target
+        alias: -t
+        type: actor
+        selected: true
+        required: true
+        help: the actor to attach mud physics to
