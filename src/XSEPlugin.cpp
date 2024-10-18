@@ -334,18 +334,21 @@ void DetachMudPhysics(RE::StaticFunctionTag*, RE::Actor* objRef)
 			}
 		}
 		if (g_mudstate.contains(objRef)) {
-			RE::BSGeometry* mud_shape = mud_geometry_av->AsGeometry();
-			if (g_mudstate[objRef].mud_ready) {
-				if (mud_shape->GetGeometryRuntimeData().skinInstance != nullptr) {
-					if (mud_shape->GetGeometryRuntimeData().skinInstance->skinPartition != nullptr) {
-						if (mud_shape->GetGeometryRuntimeData().skinInstance->skinPartition->vertexCount > 0) {
-							uint32_t vertexCount = mud_shape->GetGeometryRuntimeData().skinInstance->skinPartition->vertexCount;
-							uint32_t vertexSize = mud_shape->GetGeometryRuntimeData().skinInstance->skinPartition->partitions[0].vertexDesc.GetSize();
-							memcpy(mud_shape->GetGeometryRuntimeData().skinInstance->skinPartition->partitions[0].buffData->rawVertexData, g_mudstate[objRef].originalVertexData, vertexSize * vertexCount);
+			if (mud_geometry_av) {
+				RE::BSGeometry* mud_shape = mud_geometry_av->AsGeometry();
+				if (mud_shape) {
+					if (g_mudstate[objRef].mud_ready) {
+						if (mud_shape->GetGeometryRuntimeData().skinInstance != nullptr) {
+							if (mud_shape->GetGeometryRuntimeData().skinInstance->skinPartition != nullptr) {
+								if (mud_shape->GetGeometryRuntimeData().skinInstance->skinPartition->vertexCount > 0) {
+									uint32_t vertexCount = mud_shape->GetGeometryRuntimeData().skinInstance->skinPartition->vertexCount;
+									uint32_t vertexSize = mud_shape->GetGeometryRuntimeData().skinInstance->skinPartition->partitions[0].vertexDesc.GetSize();
+									memcpy(mud_shape->GetGeometryRuntimeData().skinInstance->skinPartition->partitions[0].buffData->rawVertexData, g_mudstate[objRef].originalVertexData, vertexSize * vertexCount);
+								}
+							}
 						}
 					}
 				}
-				
 			}
 			free(g_mudstate[objRef].originalVertexData);
 			destroy_mud(g_mudstate[objRef].mud_ffi);
