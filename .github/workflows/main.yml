@@ -27,9 +27,10 @@ jobs:
         with:
           vcpkgGitCommitId: "76d153790caf0592fce8fc4484aa6db18c7d00d4"
       - run: rustup update
+      - run: rustup toolchain install nightly
       - run: | 
               cd ${{github.workspace}}/SkyCloth
-              cargo build --release
+              cargo +nightly build --release
               cd ..
               move SkyCloth/target/release/SkyCloth.dll ${{github.workspace}}/SkyCloth.dll
               move SkyCloth/target/release/SkyCloth.lib ${{github.workspace}}/SkyCloth.lib
