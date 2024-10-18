@@ -252,7 +252,7 @@ void UpdateMudPhysics(RE::Actor* ref, float delta,uint64_t arg3,uint64_t arg4)
 										time += delta;
 										float sink = (fmod(time,30.0f)/30.0f)*0.7f;
 										float frequency = mudinit.frequency;
-										state.mud_ffi = update_mud(state.mud_ffi, deform_positions, deform_vectors, (float*)mud_shape->GetGeometryRuntimeData().skinInstance->skinPartition->partitions[0].buffData->rawVertexData, sink, time, frequency, mudinit.wave_speed_time_per_meter);
+										state.mud_ffi = update_mud(state.mud_ffi, deform_positions, deform_vectors, (float*)mud_shape->GetGeometryRuntimeData().skinInstance->skinPartition->partitions[0].buffData->rawVertexData, sink, time, frequency, mudinit.wave_speed_time_per_meter,mudinit.chirp_multi);
 									}
 									uint8_t* vertex_positions = mud_shape->GetGeometryRuntimeData().skinInstance->skinPartition->partitions[0].buffData->rawVertexData + mud_shape->GetGeometryRuntimeData().skinInstance->skinPartition->partitions[0].vertexDesc.GetAttributeOffset(RE::BSGraphics::Vertex::Attribute::VA_POSITION);
 									/* for (unsigned int vidx = 0; vidx < vertexCount; vidx++) {
@@ -359,7 +359,7 @@ void DetachMudPhysics(RE::StaticFunctionTag*, RE::Actor* objRef)
 		}
 	}
 }
-void AttachMudPhysics(RE::StaticFunctionTag*, RE::Actor* objRef, float falloff,float sine_magnitude,float frequency, float wave_speed_time_per_meter)
+void AttachMudPhysics(RE::StaticFunctionTag*, RE::Actor* objRef, float falloff,float sine_magnitude,float frequency, float wave_speed_time_per_meter, float chirp_multi)
 {
 	
 	std::lock_guard<std::recursive_mutex> lock(g_mudmutex);
@@ -396,7 +396,10 @@ void AttachMudPhysics(RE::StaticFunctionTag*, RE::Actor* objRef, float falloff,f
 		mudinit.min_dotprod = 0.7f;
 		mudinit.frequency = frequency;
 		mudinit.wave_speed_time_per_meter = wave_speed_time_per_meter;
-		g_mudstate.insert_or_assign(objRef, state);
+		mudinit.chirp_multi = chirp_multi;
+		if (!g_mudstate.contains(objRef)) {
+			g_mudstate.insert_or_assign(objRef, state);
+		}
 		
 	}
 	
