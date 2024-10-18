@@ -126,7 +126,7 @@ __kernel void deform_mud(unsigned int vertex_stride,unsigned int pos_offset,unsi
             float offset_len=length(offset);
             float3 offset3=offset_vec*length(offset)*dist_scale;
             float distance_from_plane_point=length(plane_point.xyz-orig_position.xyz)/69.99125119;
-            float sine_vertical_offset=((sin((6.2831853071796*frequency+chirp_multi*(distance_from_plane_point/69.99125119))*(time+((distance_from_plane_point)/wave_speed_time_per_meter)))+1.0)*sine_magnitude*dist_scale)/2.0;
+            float sine_vertical_offset=((sin((6.2831853071796*(frequency+chirp_multi*(distance_from_plane_point/69.99125119)))*(time+((distance_from_plane_point)/wave_speed_time_per_meter)))+1.0)*sine_magnitude*dist_scale)/2.0;
             float3 test_new_point=orig_position.xyz+offset3+offset_vec*(sine_vertical_offset*(float)69.99125119);
             //test_new_point += plane_point-orig_position;
             if (isfinite(length(new_position.xyz-orig_position.xyz))) {
