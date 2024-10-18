@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(
-	SamplePlugin
+	SkyPhysicsTest
 	VERSION 0.7.5
 	LANGUAGES CXX
 )
@@ -30,12 +30,16 @@ include(XSEPlugin)
 find_package(magic_enum CONFIG REQUIRED)
 find_package(xbyak CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
+find_package(OpenCL CONFIG REQUIRED)
 find_path(CLIB_UTIL_INCLUDE_DIRS "ClibUtil/utils.hpp")
+find_path(DETOURS_INCLUDE_DIRS "detours/detours.h")
+find_library(DETOURS_LIBRARY detours REQUIRED)
 
 target_include_directories(
 	${PROJECT_NAME}
 	PRIVATE
 	${CLIB_UTIL_INCLUDE_DIRS}
+ 	${DETOURS_INCLUDE_DIRS}
 )
 
 target_link_libraries(
@@ -44,6 +48,9 @@ target_link_libraries(
 	magic_enum::magic_enum
 	xbyak::xbyak
 	nlohmann_json::nlohmann_json
+        ${DETOURS_LIBRARY}
+        ../SkyCloth.dll
+        OpenCL::OpenCL 
 )
 
 # https://gitlab.kitware.com/cmake/cmake/-/issues/24922#note_1371990
