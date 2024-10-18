@@ -26,7 +26,16 @@ jobs:
         uses: lukka/run-vcpkg@v11
         with:
           vcpkgCommitId: "76d153790caf0592fce8fc4484aa6db18c7d00d4"
-      
+      - run: rustup update
+      - run: | 
+              cd ${{github.workspace}}/SkyCloth
+              cargo +nightly build --release
+              cd ..
+              move target/release/SkyCloth.dll ${{github.workspace}}/SkyCloth.dll
+              move target/release/SkyCloth.lib ${{github.workspace}}/SkyCloth.lib
+      - uses: actions/upload-artifact@v4
+        with:    
+          path: 
       - name: Run CMake
         uses: lukka/run-cmake@v10
         with:
@@ -42,6 +51,7 @@ jobs:
           cd artifacts
           move ../SkyPhysicsTest.dll
           move ../SkyPhysicsTest.pdb
+          move ${{github.workspace}}/SkyCloth.dll
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with: 

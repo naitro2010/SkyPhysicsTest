@@ -1,0 +1,21 @@
+[package]
+name = "SkyCloth"
+version = "0.1.0"
+edition = "2021"
+[lib]
+crate-type = ["cdylib"]
+[dependencies]
+ocl = "0.19.7"
+tobj = "4.0.2"
+three-d = "0.17.0"
+three-d-asset = {version = "0.7"}
+[dependencies.windows]
+version = "0.58.0"
+features = [
+    "Data_Xml_Dom",
+    "Win32_Foundation",
+    "Win32_System_Diagnostics_Debug"
+]
+[build-dependencies]
+bindgen = "0.65.1"
+cbindgen = "0.24.0"
