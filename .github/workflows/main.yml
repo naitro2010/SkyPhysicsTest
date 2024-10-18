@@ -31,8 +31,8 @@ jobs:
               cd ${{github.workspace}}/SkyCloth
               cargo build --release
               cd ..
-              move target/release/SkyCloth.dll ${{github.workspace}}/SkyCloth.dll
-              move target/release/SkyCloth.lib ${{github.workspace}}/SkyCloth.lib
+              move SkyCloth/target/release/SkyCloth.dll ${{github.workspace}}/SkyCloth.dll
+              move SkyCloth/target/release/SkyCloth.lib ${{github.workspace}}/SkyCloth.lib
       - name: Run CMake
         uses: lukka/run-cmake@v10
         with:
