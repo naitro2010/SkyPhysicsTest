@@ -25,7 +25,7 @@ jobs:
       - name: vcpkg cache
         uses: lukka/run-vcpkg@v11
         with:
-          vcpkgCommitId: "76d153790caf0592fce8fc4484aa6db18c7d00d4"
+          vcpkgGitCommitId: "76d153790caf0592fce8fc4484aa6db18c7d00d4"
       - run: rustup update
       - run: | 
               cd ${{github.workspace}}/SkyCloth
