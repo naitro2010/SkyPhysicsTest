@@ -46,6 +46,7 @@ time: f32,
 frequency: f32,
 wave_speed_time_per_meter: f32,
 sine_magnitude: f32,
+chirp_multi: f32,
 }
 #[no_mangle]
 pub unsafe extern fn destroy_mud (state:*mut MUDFFI)
@@ -60,7 +61,7 @@ pub unsafe extern fn reset_mud (state:*mut MUDFFI) -> *mut MUDFFI
     return Box::into_raw(mud);
 }
 #[no_mangle]
-pub unsafe extern fn update_mud (state:*mut MUDFFI,deform_pos_array: *mut f32,deform_vec_array: *mut f32, output_vertex_data: *mut f32,sink: f32, time: f32,frequency: f32, wave_speed_time_per_meter: f32) -> *mut MUDFFI
+pub unsafe extern fn update_mud (state:*mut MUDFFI,deform_pos_array: *mut f32,deform_vec_array: *mut f32, output_vertex_data: *mut f32,sink: f32, time: f32,frequency: f32, wave_speed_time_per_meter: f32, chirp_multi:f32) -> *mut MUDFFI
 {
     let mut mud=Box::from_raw(state);
     let mut deform_positions=unsafe { std::slice::from_raw_parts(deform_pos_array,8)};
@@ -72,6 +73,7 @@ pub unsafe extern fn update_mud (state:*mut MUDFFI,deform_pos_array: *mut f32,de
     gpu_struct_ref.ocl_kernel.set_arg("time", time).unwrap();
     gpu_struct_ref.ocl_kernel.set_arg("frequency", frequency).unwrap();
     gpu_struct_ref.ocl_kernel.set_arg("wave_speed_time_per_meter", wave_speed_time_per_meter).unwrap();
+    gpu_struct_ref.ocl_kernel.set_arg("chirp_multi", chirp_multi).unwrap();
     unsafe {gpu_struct_ref.ocl_kernel.enq().unwrap()};
     unsafe {gpu_struct_ref.recalc_kernel.enq().unwrap()};
     gpu_struct_ref.ocl_queue.finish().unwrap();
@@ -88,10 +90,11 @@ fn debug_log(input_string: &str)
 }
 const src:&str = r#"
 __kernel void deform_mud(unsigned int vertex_stride,unsigned int pos_offset,unsigned int normal_offset,__global float * ocl_orig_buffer,__global float * ocl_next_buffer,__global float* local_deform_positions,__global float* local_deform_vectors, unsigned int deform_count, float max_vertical_deform_distance_meters, float falloff,
-     float vertical_offset, float min_dotprod, float time, float frequency, float wave_speed_time_per_meter, float sink, float sine_magnitude) {
+     float vertical_offset, float min_dotprod, float time, float frequency, float wave_speed_time_per_meter, float sink, float sine_magnitude, float chirp_multi) {
     float3 new_position=(float3)(ocl_orig_buffer[vertex_stride*get_global_id(0)+pos_offset],ocl_orig_buffer[vertex_stride*get_global_id(0)+pos_offset+1],ocl_orig_buffer[vertex_stride*get_global_id(0)+pos_offset+2]);
-    float3 orig_position=new_position.xyz+(float3)(0.0,0.0,sink/69.99125119);
-
+    float3 orig_position=new_position.xyz+(float3)(0.0,0.0,sink*69.99125119);
+    new_position=(float3)(0.0,0.0,0.0);
+    float new_count=0.0;
     for (unsigned int di=0; di<deform_count; di++) {
 
             float3 deform_pos=vload4(di,local_deform_positions).xyz;
@@ -117,21 +120,21 @@ __kernel void deform_mud(unsigned int vertex_stride,unsigned int pos_offset,unsi
             float3 offset=(deform_pos.xyz-plane_point.xyz)+voffset;
             float3 offset2=(deform_pos.xyz-orig_position.xyz)+voffset2;
             float3 offset_vec=normalize(offset);
+            float offset_len=length(offset);
             float3 offset3=offset_vec*length(offset)*dist_scale;
-            float sine_vertical_offset=((sin((6.2831853071796*frequency)*(time+((length(plane_point.xyz-orig_position.xyz)/69.99125119)/wave_speed_time_per_meter)))+1.0)*sine_magnitude)/2.0;
+            float distance_from_plane_point=length(plane_point.xyz-orig_position.xyz)/69.99125119;
+            float sine_vertical_offset=((sin((6.2831853071796*frequency+chirp_multi*(distance_from_plane_point/69.99125119))*(time+((distance_from_plane_point)/wave_speed_time_per_meter)))+1.0)*sine_magnitude*dist_scale)/2.0;
             float3 test_new_point=orig_position.xyz+offset3+offset_vec*(sine_vertical_offset*(float)69.99125119);
             //test_new_point += plane_point-orig_position;
-            if (isfinite(length(new_position.z-orig_position.z))) {
-                if (length(test_new_point.z-orig_position.z) > length(new_position.z-orig_position.z)) {
-                    if (length(test_new_point.xyz-orig_position.xyz) > length(new_position.xyz-orig_position.xyz)) {
-                        new_position.xyz=test_new_point.xyz;
-                    }
-                }
-            } else {
-                if (length(test_new_point.xyz-orig_position.xyz) > length(new_position.xyz-orig_position.xyz)) {
-                    new_position.xyz=test_new_point.xyz;
-                }
+            if (isfinite(length(new_position.xyz-orig_position.xyz))) {
+                new_position.xyz+=test_new_point.xyz;
+                new_count += 1.0;
             }
+    }
+    if (new_count >= 1.0) {
+        new_position.xyz/=new_count;
+    } else {
+        new_position.xyz=orig_position.xyz;
     }
     vstore4((char4)(0,0,0,0),0,(__global char *)&ocl_next_buffer[get_global_id(0)*vertex_stride+normal_offset+0]);
     ocl_next_buffer[get_global_id(0)*vertex_stride+pos_offset+0]=new_position.x;
@@ -210,6 +213,7 @@ pub unsafe extern fn init_mud ( mud_init:*mut MUDINIT) -> *mut MUDFFI
     .arg_named("wave_speed_time_per_meter",mistruct.wave_speed_time_per_meter)
     .arg_named("sink",0.0f32)
     .arg_named("sine_magnitude", mistruct.sine_magnitude)
+    .arg_named("chirp_multi", mistruct.chirp_multi)    
     .build().unwrap();
     let mut ocl_normals_temp_buffer=pro_que.buffer_builder::<f32>().len(mistruct.vertex_count*4).build().unwrap();
     let recalculate_normals_kernel = pro_que.kernel_builder("recalculate_normals")
@@ -290,6 +294,7 @@ mod tests {
         .arg_named("wave_speed_time_per_meter",0f32)
         .arg_named("sink",0f32)
         .arg_named("sine_magnitude", 0.3f32)
+        .arg_named("chirp_multi", 0.3f32)
         .build().unwrap();
         let recalculate_normals_kernel = pro_que.kernel_builder("recalculate_normals")
         .arg(vertex_stride/4 as u32)

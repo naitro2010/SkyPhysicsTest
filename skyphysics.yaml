@@ -33,7 +33,12 @@ subs:
         alias: -s
         type: float
         required: true
-        help: speed of wave time per meter        
+        help: speed of wave time per meter    
+      - name: --chirp
+        alias: -c
+        type: float
+        required: true
+        help: chirp multiplier            
   - name: DetachMudPhysics
     alias: dmp
     func: DetachMudPhysics
