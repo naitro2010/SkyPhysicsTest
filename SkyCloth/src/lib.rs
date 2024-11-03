@@ -162,7 +162,7 @@ __kernel void recalculate_normals(unsigned int vertex_stride,unsigned int vertex
          float4 pos1=vload4(0,&ocl_next_buffer[vertex_idx1*vertex_stride+pos_offset]);
          float4 pos2=vload4(0,&ocl_next_buffer[vertex_idx2*vertex_stride+pos_offset]);
          
-         float3 normal=-cross(pos1.xyz-pos0.xyz,pos2.xyz-pos0.xyz);
+         float3 normal=cross(pos1.xyz-pos0.xyz,pos2.xyz-pos0.xyz);
          new_normals[vertex_idx0].xyz+=normal;
          new_normals[vertex_idx1].xyz+=normal;
          new_normals[vertex_idx2].xyz+=normal;
@@ -184,7 +184,7 @@ __kernel void recalculate_normals(unsigned int vertex_stride,unsigned int vertex
          scaled_tangent.y=(char)tangent_f4.y;
          scaled_tangent.z=(char)tangent_f4.z;
          vstore4(scaled_normal,0, (__global char*)&ocl_next_buffer[vertex_idx*vertex_stride+normal_offset+0]);
-         //vstore4(scaled_tangent,0, (__global char*)&ocl_next_buffer[vertex_idx*vertex_stride+tangent_offset+0]);
+         vstore4(scaled_tangent,0, (__global char*)&ocl_next_buffer[vertex_idx*vertex_stride+tangent_offset+0]);
      }
      
 }
