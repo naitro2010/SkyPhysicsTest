@@ -157,7 +157,7 @@ __kernel void recalculate_normals(unsigned int vertex_stride,unsigned int vertex
          float4 pos1=vload4(0,&ocl_next_buffer[vertex_idx1*vertex_stride+pos_offset]);
          float4 pos2=vload4(0,&ocl_next_buffer[vertex_idx2*vertex_stride+pos_offset]);
          
-         float3 normal=-cross(pos1.xyz-pos0.xyz,pos2.xyz-pos0.xyz);
+         float3 normal=cross(pos1.xyz-pos0.xyz,pos2.xyz-pos0.xyz);
          new_normals[vertex_idx0].xyz+=normal;
          new_normals[vertex_idx1].xyz+=normal;
          new_normals[vertex_idx2].xyz+=normal;
