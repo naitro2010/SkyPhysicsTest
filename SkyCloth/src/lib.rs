@@ -150,6 +150,10 @@ __kernel void deform_mud(unsigned int vertex_stride,unsigned int pos_offset,unsi
     
 __kernel void recalculate_normals(unsigned int vertex_stride,unsigned int vertex_len,unsigned int triangles_len,unsigned int pos_offset,unsigned int normal_offset,unsigned int tangent_offset,__global unsigned short *ocl_triangle_indices,__global float4 * new_normals,__global float * ocl_next_buffer)
 {
+     for (unsigned int vertex_idx=0; vertex_idx < vertex_len; vertex_idx+=1)
+     {
+        new_normals[vertex_idx]=(float4)(0.0,0.0,0.0,0.0);
+     }
      for (unsigned int triangle_idx=0; triangle_idx < triangles_len-2; triangle_idx+=3) {
          unsigned int vertex_idx0=ocl_triangle_indices[triangle_idx];
          unsigned int vertex_idx1=ocl_triangle_indices[(triangle_idx+1)];
