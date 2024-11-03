@@ -37,6 +37,7 @@ triangle_count:u32,
 triangles:*mut u16,
 pos_offset:u32,
 normal_offset:u32,
+tangent_offset:u32,
 vertex_ptr:*mut f32,
 falloff: f32,
 max_vertical_dist:f32,
@@ -146,7 +147,7 @@ __kernel void deform_mud(unsigned int vertex_stride,unsigned int pos_offset,unsi
     ocl_next_buffer[get_global_id(0)*vertex_stride+pos_offset+2]=new_position.z;
     
 }
-__kernel void recalculate_normals(unsigned int vertex_stride,unsigned int vertex_len,unsigned int triangles_len,unsigned int pos_offset,unsigned int normal_offset,__global unsigned short *ocl_triangle_indices,__global float4 * new_normals,__global float * ocl_next_buffer)
+__kernel void recalculate_normals(unsigned int vertex_stride,unsigned int vertex_len,unsigned int triangles_len,unsigned int pos_offset,unsigned int normal_offset,unsigned int tangent_offset,__global unsigned short *ocl_triangle_indices,__global float4 * new_normals,__global float * ocl_next_buffer)
 {
      for (unsigned int triangle_idx=0; triangle_idx < triangles_len-2; triangle_idx+=3) {
          unsigned int vertex_idx0=ocl_triangle_indices[triangle_idx];
@@ -156,7 +157,7 @@ __kernel void recalculate_normals(unsigned int vertex_stride,unsigned int vertex
          float4 pos1=vload4(0,&ocl_next_buffer[vertex_idx1*vertex_stride+pos_offset]);
          float4 pos2=vload4(0,&ocl_next_buffer[vertex_idx2*vertex_stride+pos_offset]);
          
-         float3 normal=cross(pos1.xyz-pos0.xyz,pos2.xyz-pos0.xyz);
+         float3 normal=-cross(pos1.xyz-pos0.xyz,pos2.xyz-pos0.xyz);
          new_normals[vertex_idx0].xyz+=normal;
          new_normals[vertex_idx1].xyz+=normal;
          new_normals[vertex_idx2].xyz+=normal;
@@ -165,12 +166,17 @@ __kernel void recalculate_normals(unsigned int vertex_stride,unsigned int vertex
      for (unsigned int vertex_idx=0; vertex_idx < vertex_len; vertex_idx+=1)
      {
          char4 scaled_normal=(char4)(0,0,0,0);
+         char4 scaled_tangent=(char4)(0,0,0,0);
          float4 scaled_normal_f4=0.0;
-         scaled_normal_f4.xyz=round(normalize(new_normals[vertex_idx].xyz)*127);
+         scaled_normal_f4.xyz=round(((normalize(new_normals[vertex_idx].xyz)+(float3)(1.0,1.0,1.0))/(float3)(2.0,2.0,2.0))*(float)255.0);
          scaled_normal.x=(char)scaled_normal_f4.x;
          scaled_normal.y=(char)scaled_normal_f4.y;
          scaled_normal.z=(char)scaled_normal_f4.z;
+         scaled_tangent.x=(char)scaled_normal_f4.y;
+         scaled_tangent.y=(char)scaled_normal_f4.z;
+         scaled_tangent.z=(char)scaled_normal_f4.x;
          vstore4(scaled_normal,0, (__global char*)&ocl_next_buffer[vertex_idx*vertex_stride+normal_offset+0]);
+         vstore4(scaled_tangent,0, (__global char*)&ocl_next_buffer[vertex_idx*vertex_stride+tangent_offset+0]);
      }
      
 }
@@ -226,6 +232,7 @@ pub unsafe extern fn init_mud ( mud_init:*mut MUDINIT) -> *mut MUDFFI
     .arg(mistruct.triangle_count as u32)
     .arg(mistruct.pos_offset/4 as u32)
     .arg(mistruct.normal_offset/4 as u32)
+    .arg(mistruct.tangent_offset/4 as u32)
     .arg(&ocl_triangle_indices)
     .arg(&mut ocl_normals_temp_buffer)
     .arg(&mut ocl_next_buffer)
@@ -254,6 +261,7 @@ mod tests {
         
     let mut vertex_stride=32;
     let mut normal_offset=0;
+    let mut tangent_offset=0;
     let mut pos_offset=16;
     let mut deform_count=2;
     let mut max_vertical_dist=1.0f32;
@@ -306,6 +314,7 @@ mod tests {
         .arg(triangle_count as u32)
         .arg(pos_offset/4 as u32)
         .arg(normal_offset/4 as u32)
+        .arg(tangent_offset/4 as u32)
         .arg(&ocl_triangle_indices)
         .arg(&mut ocl_normals_temp_buffer)
         .arg(&mut ocl_next_buffer)

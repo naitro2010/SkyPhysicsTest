@@ -190,6 +190,7 @@ void UpdateMudPhysics(RE::Actor* ref, float delta,uint64_t arg3,uint64_t arg4)
 
 							mudinit.pos_offset = mud_shape->GetGeometryRuntimeData().skinInstance->skinPartition->partitions[0].vertexDesc.GetAttributeOffset(RE::BSGraphics::Vertex::Attribute::VA_POSITION);
 							mudinit.normal_offset = mud_shape->GetGeometryRuntimeData().skinInstance->skinPartition->partitions[0].vertexDesc.GetAttributeOffset(RE::BSGraphics::Vertex::Attribute::VA_NORMAL);
+							mudinit.tangent_offset = mud_shape->GetGeometryRuntimeData().skinInstance->skinPartition->partitions[0].vertexDesc.GetAttributeOffset(RE::BSGraphics::Vertex::Attribute::VA_BINORMAL);
 							mudinit.vertex_ptr = (float*)mud_shape->GetGeometryRuntimeData().skinInstance->skinPartition->partitions[0].buffData->rawVertexData;
 							if (!g_mudtimes.contains(ref->AsReference())) {
 								g_mudtimes.insert(std::pair(ref->AsReference(), 0.0f));
