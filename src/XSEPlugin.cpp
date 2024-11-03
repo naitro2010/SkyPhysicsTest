@@ -185,7 +185,7 @@ void UpdateMudPhysics(RE::Actor* ref, float delta,uint64_t arg3,uint64_t arg4)
 							mudinit.time += delta;
 							mudinit.vertex_count = vertexCount;
 							mudinit.vertex_stride = vertexSize;
-							mudinit.triangle_count = triCount;
+							mudinit.triangle_count = triCount*3;
 							mudinit.triangles = triangles;
 
 							mudinit.pos_offset = mud_shape->GetGeometryRuntimeData().skinInstance->skinPartition->partitions[0].vertexDesc.GetAttributeOffset(RE::BSGraphics::Vertex::Attribute::VA_POSITION);

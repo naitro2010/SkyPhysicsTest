@@ -147,6 +147,7 @@ __kernel void deform_mud(unsigned int vertex_stride,unsigned int pos_offset,unsi
     ocl_next_buffer[get_global_id(0)*vertex_stride+pos_offset+2]=new_position.z;
     
 }
+    
 __kernel void recalculate_normals(unsigned int vertex_stride,unsigned int vertex_len,unsigned int triangles_len,unsigned int pos_offset,unsigned int normal_offset,unsigned int tangent_offset,__global unsigned short *ocl_triangle_indices,__global float4 * new_normals,__global float * ocl_next_buffer)
 {
      for (unsigned int triangle_idx=0; triangle_idx < triangles_len-2; triangle_idx+=3) {
@@ -167,16 +168,19 @@ __kernel void recalculate_normals(unsigned int vertex_stride,unsigned int vertex
      {
          char4 scaled_normal=(char4)(0,0,0,0);
          char4 scaled_tangent=(char4)(0,0,0,0);
+         float4 tangent_f4=(float4)(0.0,0.0,0.0,0.0);
+
          float4 scaled_normal_f4=0.0;
          scaled_normal_f4.xyz=round(((normalize(new_normals[vertex_idx].xyz)+(float3)(1.0,1.0,1.0))/(float3)(2.0,2.0,2.0))*(float)255.0);
          scaled_normal.x=(char)scaled_normal_f4.x;
          scaled_normal.y=(char)scaled_normal_f4.y;
          scaled_normal.z=(char)scaled_normal_f4.z;
-         scaled_tangent.x=(char)scaled_normal_f4.y;
-         scaled_tangent.y=(char)scaled_normal_f4.z;
-         scaled_tangent.z=(char)scaled_normal_f4.x;
+         tangent_f4.xyz=round(((normalize(cross(new_normals[vertex_idx].xyz,new_normals[vertex_idx].yzx))+(float3)(1.0,1.0,1.0))/(float3)(2.0,2.0,2.0))*(float)255.0);
+         scaled_tangent.x=(char)tangent_f4.x;
+         scaled_tangent.y=(char)tangent_f4.y;
+         scaled_tangent.z=(char)tangent_f4.z;
          vstore4(scaled_normal,0, (__global char*)&ocl_next_buffer[vertex_idx*vertex_stride+normal_offset+0]);
-         vstore4(scaled_tangent,0, (__global char*)&ocl_next_buffer[vertex_idx*vertex_stride+tangent_offset+0]);
+         //vstore4(scaled_tangent,0, (__global char*)&ocl_next_buffer[vertex_idx*vertex_stride+tangent_offset+0]);
      }
      
 }
