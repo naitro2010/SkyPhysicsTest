@@ -25,6 +25,7 @@ pub struct MUDFFI
 {
     vertex_count: u32,
     vertex_stride: u32,
+    deform_count: usize,
     gpu_struct: Option<MUDGPUStruct>,
 }
 #[derive(Debug,Copy,Clone)]
@@ -65,11 +66,11 @@ pub unsafe extern fn reset_mud (state:*mut MUDFFI) -> *mut MUDFFI
 pub unsafe extern fn update_mud (state:*mut MUDFFI,deform_pos_array: *mut f32,deform_vec_array: *mut f32, output_vertex_data: *mut f32,sink: f32, time: f32,frequency: f32, wave_speed_time_per_meter: f32, chirp_multi:f32) -> *mut MUDFFI
 {
     let mut mud=Box::from_raw(state);
-    let mut deform_positions=unsafe { std::slice::from_raw_parts(deform_pos_array,8)};
-    let mut deform_vectors=unsafe { std::slice::from_raw_parts(deform_vec_array,8)};
+    let mut deform_positions=unsafe { std::slice::from_raw_parts(deform_pos_array,(*state).deform_count*4)};
+    let mut deform_vectors=unsafe { std::slice::from_raw_parts(deform_vec_array,(*state).deform_count*4)};
     let mut gpu_struct_ref=mud.gpu_struct.as_mut().unwrap();
-    gpu_struct_ref.ocl_deform_positions.write(&deform_positions[0..8]).enq().unwrap();
-    gpu_struct_ref.ocl_deform_vectors.write(&deform_vectors[0..8]).enq().unwrap();
+    gpu_struct_ref.ocl_deform_positions.write(&deform_positions[..]).enq().unwrap();
+    gpu_struct_ref.ocl_deform_vectors.write(&deform_vectors[..]).enq().unwrap();
     gpu_struct_ref.ocl_kernel.set_arg("sink", sink).unwrap();
     gpu_struct_ref.ocl_kernel.set_arg("time", time).unwrap();
     gpu_struct_ref.ocl_kernel.set_arg("frequency", frequency).unwrap();
@@ -211,6 +212,7 @@ pub unsafe extern fn init_mud ( mud_init:*mut MUDINIT) -> *mut MUDFFI
         .dims(mistruct.vertex_count)
         .build().unwrap();
     let mut deform_count=4;
+    mud.deform_count=deform_count;
     let mut ocl_triangle_indices=pro_que.buffer_builder::<u16>().len(mistruct.triangle_count).build().unwrap();
     debug_log("Making B1");
     let mut ocl_orig_buffer=pro_que.buffer_builder::<f32>().len(mistruct.vertex_count*(mistruct.vertex_stride/4)).build().unwrap();

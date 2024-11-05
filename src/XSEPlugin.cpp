@@ -107,13 +107,13 @@ void UpdateMudPhysics(RE::Actor* ref, float delta,uint64_t arg3,uint64_t arg4)
 	if (ref->Get3D1(false) == nullptr) {
 		return;
 	}
-	
+	RE::NiAVObject *Root = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("NPC Root [Root]"));
 	RE::NiAVObject *LFoot=ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("CME L Foot [Lft ]"));
 	RE::NiAVObject *RFoot=ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("CME R Foot [Rft ]"));
-	RE::NiAVObject* RKnee = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("CME R Knee [RKne]"));
-	RE::NiAVObject* LKnee = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("CME L Knee [LKne]"));
-	RE::NiAVObject* LHand = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("CME L Hand [LHnd]"));
-	RE::NiAVObject* RHand = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("CME R Hand [RHnd]"));
+	RE::NiAVObject *RKnee = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("CME R Knee [RKne]"));
+	RE::NiAVObject *LKnee = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("CME L Knee [LKne]"));
+	RE::NiAVObject *LHand = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("CME L Hand [LHnd]"));
+	RE::NiAVObject *RHand = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("CME R Hand [RHnd]"));
 	
 	if (g_mudstate.contains(ref->AsReference())) {
 		MudDeformState &state = g_mudstate[ref->AsReference()];
@@ -223,10 +223,15 @@ void UpdateMudPhysics(RE::Actor* ref, float delta,uint64_t arg3,uint64_t arg4)
 								float r_x = 0.0f;
 								float r_y = 0.0f;
 								float r_z = 0.0f;
-								mud_shape->world.rotate.ToEulerAnglesXYZ(r_x, r_y, r_z);
-								mud_shape->local.rotate.SetEulerAnglesXYZ(0.0, 0.0, -r_z);
 								
-								if (LFoot && RFoot && LKnee && RKnee && RHand && LHand) {
+								
+								if (LFoot && RFoot && LKnee && RKnee && RHand && LHand && Root) {
+									Root->world.rotate.ToEulerAnglesXYZ(r_x, r_y, r_z);
+									mud_shape->local.rotate = Root->world.rotate.Transpose();
+									bool update = true;
+									bool update2 = true;
+									bool update3 = false;
+									mud_shape->SetSelectiveUpdateFlags(update,update2,update3);
 									RE::NiPoint3 LFoot_to_mud = mud_shape->world.rotate.Transpose() * (LFoot->world.translate - mud_shape->world.translate);
 									RE::NiPoint3 RFoot_to_mud = mud_shape->world.rotate.Transpose() * (RFoot->world.translate - mud_shape->world.translate);
 									RE::NiPoint3 LHand_to_mud = mud_shape->world.rotate.Transpose() * (LHand->world.translate - mud_shape->world.translate);
