@@ -93,9 +93,17 @@ const src:&str = r#"
 __kernel void deform_mud(unsigned int vertex_stride,unsigned int pos_offset,unsigned int normal_offset,__global float * ocl_orig_buffer,__global float * ocl_next_buffer,__global float* local_deform_positions,__global float* local_deform_vectors, unsigned int deform_count, float max_vertical_deform_distance_meters, float falloff,
      float vertical_offset, float min_dotprod, float time, float frequency, float wave_speed_time_per_meter, float sink, float sine_magnitude, float chirp_multi) {
     float3 new_position=(float3)(ocl_orig_buffer[vertex_stride*get_global_id(0)+pos_offset],ocl_orig_buffer[vertex_stride*get_global_id(0)+pos_offset+1],ocl_orig_buffer[vertex_stride*get_global_id(0)+pos_offset+2]);
+    if (get_global_id(0) >= get_global_size(0)-256) {
+        vstore4((char4)(0,0,0,0),0,(__global char *)&ocl_next_buffer[get_global_id(0)*vertex_stride+normal_offset+0]);
+        ocl_next_buffer[get_global_id(0)*vertex_stride+pos_offset+0]=new_position.x;
+        ocl_next_buffer[get_global_id(0)*vertex_stride+pos_offset+1]=new_position.y;
+        ocl_next_buffer[get_global_id(0)*vertex_stride+pos_offset+2]=new_position.z;
+        return;
+    }
     float3 orig_position=new_position.xyz+(float3)(0.0,0.0,sink*69.99125119);
     new_position=(float3)(0.0,0.0,0.0);
     float new_count=0.0;
+
     for (unsigned int di=0; di<deform_count; di++) {
 
             float3 deform_pos=vload4(di,local_deform_positions).xyz;
@@ -202,7 +210,7 @@ pub unsafe extern fn init_mud ( mud_init:*mut MUDINIT) -> *mut MUDFFI
         .src(src)
         .dims(mistruct.vertex_count)
         .build().unwrap();
-    let mut deform_count=2;
+    let mut deform_count=4;
     let mut ocl_triangle_indices=pro_que.buffer_builder::<u16>().len(mistruct.triangle_count).build().unwrap();
     debug_log("Making B1");
     let mut ocl_orig_buffer=pro_que.buffer_builder::<f32>().len(mistruct.vertex_count*(mistruct.vertex_stride/4)).build().unwrap();

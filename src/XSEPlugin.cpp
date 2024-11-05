@@ -18,7 +18,7 @@ std::recursive_mutex g_mudmutex;
 std::set<uint64_t> g_vtableset;
 std::map<RE::TESObjectREFR*, MudDeformState> g_mudstate;
 std::map<RE::TESObjectREFR*, float> g_mudtimes;
-void* OriginalUpdateAnimationPtr = nullptr;
+void* OriginalUpdatePtr = nullptr;
 void* OriginalUpdateAnimationPtrPlayer = nullptr;
 static ID3D11DeviceContext * NewDeferredContext;
 static void* OriginalSwapPresent;
@@ -91,9 +91,9 @@ void UpdateMudPhysicsPlayer(RE::Actor* ref, float delta, uint64_t arg3, uint64_t
 }
 void UpdateMudPhysicsActor(RE::Actor* ref, float delta, uint64_t arg3, uint64_t arg4)
 {
-	UpdateMudPhysics(ref, delta,arg3,arg4);
-	void (*OriginalUpdateAnimation)(RE::TESObjectREFR*, float dt, uint64_t arg3, uint64_t arg4) = (void (*)(RE::TESObjectREFR* objRef, float dt, uint64_t, uint64_t))(OriginalUpdateAnimationPtr);
-	return OriginalUpdateAnimation(ref, delta, arg3, arg4);
+	UpdateMudPhysics(ref, delta,0x0,0x0);
+	void (*OriginalUpdate)(RE::TESObjectREFR*, float dt) = (void (*)(RE::TESObjectREFR* objRef, float dt))(OriginalUpdatePtr);
+	return OriginalUpdate(ref, delta);
 }
 void UpdateMudPhysics(RE::Actor* ref, float delta,uint64_t arg3,uint64_t arg4)
 {
@@ -112,6 +112,9 @@ void UpdateMudPhysics(RE::Actor* ref, float delta,uint64_t arg3,uint64_t arg4)
 	RE::NiAVObject *RFoot=ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("CME R Foot [Rft ]"));
 	RE::NiAVObject* RKnee = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("CME R Knee [RKne]"));
 	RE::NiAVObject* LKnee = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("CME L Knee [LKne]"));
+	RE::NiAVObject* LHand = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("CME L Hand [LHnd]"));
+	RE::NiAVObject* RHand = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("CME R Hand [RHnd]"));
+	
 	if (g_mudstate.contains(ref->AsReference())) {
 		MudDeformState &state = g_mudstate[ref->AsReference()];
 		RE::NiAVObject* mud_geometry_av = nullptr;
@@ -182,7 +185,7 @@ void UpdateMudPhysics(RE::Actor* ref, float delta,uint64_t arg3,uint64_t arg4)
 							uint32_t triCount = mud_shape->GetGeometryRuntimeData().skinInstance->skinPartition->partitions[0].triangles;
 							uint16_t* triangles = mud_shape->GetGeometryRuntimeData().skinInstance->skinPartition->partitions[0].triList;
 							auto& mudinit = state.mudinit;
-							mudinit.time += delta;
+							mudinit.time += 0.01666666f;
 							mudinit.vertex_count = vertexCount;
 							mudinit.vertex_stride = vertexSize;
 							mudinit.triangle_count = triCount*3;
@@ -217,18 +220,24 @@ void UpdateMudPhysics(RE::Actor* ref, float delta,uint64_t arg3,uint64_t arg4)
 								//ID3D11Device* device = nullptr;
 								ID3D11Buffer* VB = ((ID3D11Buffer*)(mud_shape->GetGeometryRuntimeData().skinInstance->skinPartition->partitions[0].buffData->vertexBuffer));
 								//VB->GetDevice(&device);
+								float r_x = 0.0f;
+								float r_y = 0.0f;
+								float r_z = 0.0f;
+								mud_shape->world.rotate.ToEulerAnglesXYZ(r_x, r_y, r_z);
+								mud_shape->local.rotate.SetEulerAnglesXYZ(0.0, 0.0, -r_z);
 								
-								
-								if (LFoot && RFoot && LKnee && RKnee) {
+								if (LFoot && RFoot && LKnee && RKnee && RHand && LHand) {
 									RE::NiPoint3 LFoot_to_mud = mud_shape->world.rotate.Transpose() * (LFoot->world.translate - mud_shape->world.translate);
 									RE::NiPoint3 RFoot_to_mud = mud_shape->world.rotate.Transpose() * (RFoot->world.translate - mud_shape->world.translate);
+									RE::NiPoint3 LHand_to_mud = mud_shape->world.rotate.Transpose() * (LHand->world.translate - mud_shape->world.translate);
+									RE::NiPoint3 RHand_to_mud = mud_shape->world.rotate.Transpose() * (RHand->world.translate - mud_shape->world.translate);
 									RE::NiPoint3 LFoot_down_to_mud = LFoot->world.translate - LKnee->world.translate;
 									RE::NiPoint3 RFoot_down_to_mud = RFoot->world.translate - RKnee->world.translate;
 									
 									LFoot_down_to_mud = mud_shape->world.rotate.Transpose() * LFoot_down_to_mud;
 									RFoot_down_to_mud = mud_shape->world.rotate.Transpose() * RFoot_down_to_mud;
 									
-									float deform_positions[8];
+									float deform_positions[16];
 									deform_positions[4 * 0 + 0] = RFoot_to_mud.x;
 									deform_positions[4 * 0 + 1] = RFoot_to_mud.y;
 									deform_positions[4 * 0 + 2] = RFoot_to_mud.z;
@@ -237,7 +246,15 @@ void UpdateMudPhysics(RE::Actor* ref, float delta,uint64_t arg3,uint64_t arg4)
 									deform_positions[4 * 1 + 1] = LFoot_to_mud.y;
 									deform_positions[4 * 1 + 2] = LFoot_to_mud.z;
 									deform_positions[4 * 1 + 3] = 0.0;
-									float deform_vectors[8];
+									deform_positions[4 * 2 + 0] = RHand_to_mud.x;
+									deform_positions[4 * 2 + 1] = RHand_to_mud.y;
+									deform_positions[4 * 2 + 2] = RHand_to_mud.z;
+									deform_positions[4 * 2 + 3] = 0.0;
+									deform_positions[4 * 3 + 0] = LHand_to_mud.x;
+									deform_positions[4 * 3 + 1] = LHand_to_mud.y;
+									deform_positions[4 * 3 + 2] = LHand_to_mud.z;
+									deform_positions[4 * 3 + 3] = 0.0;
+									float deform_vectors[16];
 									deform_vectors[4 * 0 + 0] = 0.0;   //  RFoot_down_to_mud.x;
 									deform_vectors[4 * 0 + 1] = 0.0;  //RFoot_down_to_mud.y;
 									deform_vectors[4 * 0 + 2] = -1.0;  // RFoot_down_to_mud.z;
@@ -246,12 +263,20 @@ void UpdateMudPhysics(RE::Actor* ref, float delta,uint64_t arg3,uint64_t arg4)
 									deform_vectors[4 * 1 + 1] = 0.0;
 									deform_vectors[4 * 1 + 2] = -1.0;
 									deform_vectors[4 * 1 + 3] = 0.0;
+									deform_vectors[4 * 2 + 0] = 0.0;
+									deform_vectors[4 * 2 + 1] = 0.0;
+									deform_vectors[4 * 2 + 2] = -1.0;
+									deform_vectors[4 * 2 + 3] = 0.0;
+									deform_vectors[4 * 3 + 0] = 0.0;
+									deform_vectors[4 * 3 + 1] = 0.0;
+									deform_vectors[4 * 3 + 2] = -1.0;
+									deform_vectors[4 * 3 + 3] = 0.0;
 									if (g_mudtimes.contains(ref->AsReference())) {
 										g_mudtimes.insert(std::pair(ref->AsReference(), 0.0f));
 										auto& mudinit = state.mudinit;
 										float& time = g_mudtimes.at(ref->AsReference());
-										time += delta;
-										float sink = (fmod(time,30.0f)/30.0f)*0.7f;
+										time += 0.01666666f;
+										float sink = (fmod(time,30.0f)/30.0f)*1.5f;
 										float frequency = mudinit.frequency;
 										state.mud_ffi = update_mud(state.mud_ffi, deform_positions, deform_vectors, (float*)mud_shape->GetGeometryRuntimeData().skinInstance->skinPartition->partitions[0].buffData->rawVertexData, sink, time, frequency, mudinit.wave_speed_time_per_meter,mudinit.chirp_multi);
 									}
@@ -292,8 +317,12 @@ void UpdateMudPhysics(RE::Actor* ref, float delta,uint64_t arg3,uint64_t arg4)
 	}
 
 }
-void DetachMudPhysics(RE::StaticFunctionTag*, RE::Actor* objRef)
+void DetachMudPhysics(RE::StaticFunctionTag*, RE::TESForm* obj)
 {
+	if (!obj) {
+		return;
+	}
+	RE::Actor* objRef = obj->As<RE::Actor>();
 	std::lock_guard<std::recursive_mutex> lock(g_mudmutex);
 	if (!objRef) {
 		return;
@@ -360,27 +389,32 @@ void DetachMudPhysics(RE::StaticFunctionTag*, RE::Actor* objRef)
 		}
 	}
 }
-void AttachMudPhysics(RE::StaticFunctionTag*, RE::Actor* objRef, float falloff,float sine_magnitude,float frequency, float wave_speed_time_per_meter, float chirp_multi)
+void AttachMudPhysics(RE::StaticFunctionTag*, RE::TESForm* obj, float falloff, float sine_magnitude, float frequency, float wave_speed_time_per_meter, float chirp_multi)
 {
-	
+	if (!obj) {
+		return;
+	}
+	RE::Actor* objRef = obj->As<RE::Actor>();
 	std::lock_guard<std::recursive_mutex> lock(g_mudmutex);
 	auto& trampoline = SKSE::GetTrampoline();
 	if (!objRef) {
 		return;
 	}
-	if (OriginalUpdateAnimationPtr == nullptr) {
+	if (OriginalUpdatePtr == nullptr) {
 		DetourTransactionBegin();
 		DetourUpdateThread(GetCurrentThread());
-		OriginalUpdateAnimationPtr = (void*)REL::Offset(0x66aad0).address();
+		OriginalUpdatePtr = (void*)REL::Offset(0x667d40).address();
 		
-		DetourAttach(&OriginalUpdateAnimationPtr, UpdateMudPhysicsActor);
+		DetourAttach(&OriginalUpdatePtr, UpdateMudPhysicsActor);
 		DetourTransactionCommit();
+		/*
 		DetourTransactionBegin();
 		DetourUpdateThread(GetCurrentThread());
 		OriginalUpdateAnimationPtrPlayer = (void*)REL::Offset(0x7393a0).address();
 
 		DetourAttach(&OriginalUpdateAnimationPtrPlayer, UpdateMudPhysicsPlayer);
 		DetourTransactionCommit();
+		*/
 	}
 	if (RE::Actor * actor=objRef->As<RE::Actor>()) {
 		
