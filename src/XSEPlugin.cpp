@@ -227,7 +227,8 @@ void UpdateMudPhysics(RE::Actor* ref, float delta,uint64_t arg3,uint64_t arg4)
 								
 								if (LFoot && RFoot && LKnee && RKnee && RHand && LHand && Root) {
 									Root->world.rotate.ToEulerAnglesXYZ(r_x, r_y, r_z);
-									mud_shape->local.rotate = Root->world.rotate.Transpose();
+									//mud_shape->world.rotate = Root->world.rotate.Transpose();
+									mud_shape->world = Root->world;
 									bool update = true;
 									bool update2 = true;
 									bool update3 = false;
