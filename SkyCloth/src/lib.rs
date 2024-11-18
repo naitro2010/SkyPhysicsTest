@@ -211,7 +211,7 @@ pub unsafe extern fn init_mud ( mud_init:*mut MUDINIT) -> *mut MUDFFI
         .src(src)
         .dims(mistruct.vertex_count)
         .build().unwrap();
-    let mut deform_count=4;
+    let mut deform_count=2;
     mud.deform_count=deform_count;
     let mut ocl_triangle_indices=pro_que.buffer_builder::<u16>().len(mistruct.triangle_count).build().unwrap();
     debug_log("Making B1");

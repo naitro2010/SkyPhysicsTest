@@ -110,14 +110,15 @@ void UpdateMudPhysics(RE::Actor* ref, float delta,uint64_t arg3,uint64_t arg4)
 	RE::NiAVObject *Root = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("NPC Root [Root]"));
 	RE::NiAVObject *LFoot=ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("CME L Foot [Lft ]"));
 	RE::NiAVObject *RFoot=ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("CME R Foot [Rft ]"));
-	RE::NiAVObject *RKnee = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("CME R Knee [RKne]"));
-	RE::NiAVObject *LKnee = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("CME L Knee [LKne]"));
+	RE::NiAVObject *RAnkle = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("NPC R Foot [Rft ]"));
+	RE::NiAVObject *LAnkle = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("NPC L Foot [Lft ]"));
 	RE::NiAVObject *LHand = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("CME L Hand [LHnd]"));
 	RE::NiAVObject *RHand = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("CME R Hand [RHnd]"));
 	
 	if (g_mudstate.contains(ref->AsReference())) {
 		MudDeformState &state = g_mudstate[ref->AsReference()];
 		RE::NiAVObject* mud_geometry_av = nullptr;
+		RE::NiAVObject* feet_geometry_av = nullptr;
 		if (mud_geometry_av == nullptr) {
 			for (int i = 0; i < 42; i++) {
 				auto& bpo = ref->GetBiped1(false)->objects[i];
@@ -138,6 +139,23 @@ void UpdateMudPhysics(RE::Actor* ref, float delta,uint64_t arg3,uint64_t arg4)
 				
 			}
 		}
+		if (feet_geometry_av == nullptr) {
+			for (int i = 0; i < 42; i++) {
+				auto& bpo = ref->GetBiped1(false)->objects[i];
+				if (!bpo.addon || !bpo.part || !bpo.partClone) {
+					continue;
+				}
+
+				logger::info("{}", bpo.part->model.c_str());
+				if (!bpo.part->model.contains("feet")) {
+					continue;
+				}
+
+				if ((bpo.partClone)) {
+					feet_geometry_av = bpo.partClone.get();
+				}
+			}
+		}
 		if (mud_geometry_av == nullptr) {
 			for (int i = 0; i < 42; i++) {
 
@@ -155,6 +173,23 @@ void UpdateMudPhysics(RE::Actor* ref, float delta,uint64_t arg3,uint64_t arg4)
 					mud_geometry_av = bpo.partClone.get();
 				}
 				
+			}
+		}
+		if (feet_geometry_av == nullptr) {
+			for (int i = 0; i < 42; i++) {
+				auto& bpo = ref->GetBiped1(false)->bufferedObjects[i];
+				if (!bpo.addon || !bpo.part || !bpo.partClone) {
+					continue;
+				}
+
+				logger::info("{}", bpo.part->model.c_str());
+				if (!bpo.part->model.contains("feet")) {
+					continue;
+				}
+
+				if ((bpo.partClone)) {
+					feet_geometry_av = bpo.partClone.get();
+				}
 			}
 		}
 		//bipedanim->root->GetObjectByName(RE::BSFixedString("MudGeometry"));
@@ -225,7 +260,7 @@ void UpdateMudPhysics(RE::Actor* ref, float delta,uint64_t arg3,uint64_t arg4)
 								float r_z = 0.0f;
 								
 								
-								if (LFoot && RFoot && LKnee && RKnee && RHand && LHand && Root) {
+								if (LFoot && RFoot && LAnkle && RAnkle && RHand && LHand && Root) {
 									Root->world.rotate.ToEulerAnglesXYZ(r_x, r_y, r_z);
 									//mud_shape->world.rotate = Root->world.rotate.Transpose();
 									mud_shape->world = Root->world;
@@ -233,15 +268,16 @@ void UpdateMudPhysics(RE::Actor* ref, float delta,uint64_t arg3,uint64_t arg4)
 									bool update2 = true;
 									bool update3 = false;
 									mud_shape->SetSelectiveUpdateFlags(update,update2,update3);
-									RE::NiPoint3 LFoot_to_mud = mud_shape->world.rotate.Transpose() * (LFoot->world.translate - mud_shape->world.translate);
-									RE::NiPoint3 RFoot_to_mud = mud_shape->world.rotate.Transpose() * (RFoot->world.translate - mud_shape->world.translate);
-									RE::NiPoint3 LHand_to_mud = mud_shape->world.rotate.Transpose() * (LHand->world.translate - mud_shape->world.translate);
-									RE::NiPoint3 RHand_to_mud = mud_shape->world.rotate.Transpose() * (RHand->world.translate - mud_shape->world.translate);
-									RE::NiPoint3 LFoot_down_to_mud = LFoot->world.translate - LKnee->world.translate;
-									RE::NiPoint3 RFoot_down_to_mud = RFoot->world.translate - RKnee->world.translate;
+									RE::NiTransform world_to_skin = mud_shape->GetGeometryRuntimeData().skinInstance->rootParent->world.Invert() * mud_shape->GetGeometryRuntimeData().skinInstance->skinData->rootParentToSkin;
+									RE::NiPoint3 LFoot_to_mud = world_to_skin * (LFoot->world.translate);
+									RE::NiPoint3 RFoot_to_mud = world_to_skin * (RFoot->world.translate);
+									RE::NiPoint3 LHand_to_mud = world_to_skin * (LHand->world.translate);
+									RE::NiPoint3 RHand_to_mud = world_to_skin * (RHand->world.translate);
+									RE::NiPoint3 LFoot_down_to_mud = LFoot->world.translate - LAnkle->world.translate;
+									RE::NiPoint3 RFoot_down_to_mud = RFoot->world.translate - RAnkle->world.translate;
 									
-									LFoot_down_to_mud = mud_shape->world.rotate.Transpose() * LFoot_down_to_mud;
-									RFoot_down_to_mud = mud_shape->world.rotate.Transpose() * RFoot_down_to_mud;
+									LFoot_down_to_mud = world_to_skin * LFoot_down_to_mud;
+									RFoot_down_to_mud = world_to_skin * RFoot_down_to_mud;
 									
 									float deform_positions[16];
 									deform_positions[4 * 0 + 0] = RFoot_to_mud.x;
@@ -261,13 +297,13 @@ void UpdateMudPhysics(RE::Actor* ref, float delta,uint64_t arg3,uint64_t arg4)
 									deform_positions[4 * 3 + 2] = LHand_to_mud.z;
 									deform_positions[4 * 3 + 3] = 0.0;
 									float deform_vectors[16];
-									deform_vectors[4 * 0 + 0] = 0.0;   //  RFoot_down_to_mud.x;
-									deform_vectors[4 * 0 + 1] = 0.0;  //RFoot_down_to_mud.y;
-									deform_vectors[4 * 0 + 2] = -1.0;  // RFoot_down_to_mud.z;
+									deform_vectors[4 * 0 + 0] = RFoot_down_to_mud.x;
+									deform_vectors[4 * 0 + 1] = RFoot_down_to_mud.y;
+									deform_vectors[4 * 0 + 2] = RFoot_down_to_mud.z;
 									deform_vectors[4 * 0 + 3] = 0.0;
-									deform_vectors[4 * 1 + 0] = 0.0;
-									deform_vectors[4 * 1 + 1] = 0.0;
-									deform_vectors[4 * 1 + 2] = -1.0;
+									deform_vectors[4 * 0 + 0] = LFoot_down_to_mud.x;
+									deform_vectors[4 * 0 + 1] = LFoot_down_to_mud.y;
+									deform_vectors[4 * 0 + 2] = LFoot_down_to_mud.z;
 									deform_vectors[4 * 1 + 3] = 0.0;
 									deform_vectors[4 * 2 + 0] = 0.0;
 									deform_vectors[4 * 2 + 1] = 0.0;
