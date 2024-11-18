@@ -281,7 +281,7 @@ mod tests {
     let mut normal_offset=0;
     let mut tangent_offset=0;
     let mut pos_offset=16;
-    let mut deform_count=2;
+    let mut deform_count=4;
     let mut max_vertical_dist=1.0f32;
     let mut falloff=0.1f32;
     let mut vertical_offset=0.1f32;

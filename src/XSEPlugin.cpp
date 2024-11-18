@@ -112,8 +112,10 @@ void UpdateMudPhysics(RE::Actor* ref, float delta,uint64_t arg3,uint64_t arg4)
 	RE::NiAVObject *RFoot=ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("CME R Foot [Rft ]"));
 	RE::NiAVObject *RAnkle = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("NPC R Foot [Rft ]"));
 	RE::NiAVObject *LAnkle = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("NPC L Foot [Lft ]"));
-	RE::NiAVObject *LHand = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("CME L Hand [LHnd]"));
-	RE::NiAVObject *RHand = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("CME R Hand [RHnd]"));
+	RE::NiAVObject* RWrist = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("NPC R Hand [RHnd ]"));
+	RE::NiAVObject* LWrist = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("NPC L Hand [LHnd ]"));
+	RE::NiAVObject *LHand = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("CME L Hand [LHnd ]"));
+	RE::NiAVObject *RHand = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("CME R Hand [RHnd ]"));
 	
 	if (g_mudstate.contains(ref->AsReference())) {
 		MudDeformState &state = g_mudstate[ref->AsReference()];
@@ -263,7 +265,8 @@ void UpdateMudPhysics(RE::Actor* ref, float delta,uint64_t arg3,uint64_t arg4)
 								if (LFoot && RFoot && LAnkle && RAnkle && RHand && LHand && Root) {
 									Root->world.rotate.ToEulerAnglesXYZ(r_x, r_y, r_z);
 									//mud_shape->world.rotate = Root->world.rotate.Transpose();
-									mud_shape->world = Root->world;
+
+									
 									bool update = true;
 									bool update2 = true;
 									bool update3 = false;
@@ -275,10 +278,12 @@ void UpdateMudPhysics(RE::Actor* ref, float delta,uint64_t arg3,uint64_t arg4)
 									RE::NiPoint3 RHand_to_mud = world_to_skin * (RHand->world.translate);
 									RE::NiPoint3 LFoot_down_to_mud = LFoot->world.translate - LAnkle->world.translate;
 									RE::NiPoint3 RFoot_down_to_mud = RFoot->world.translate - RAnkle->world.translate;
-									
+									RE::NiPoint3 LHand_down_to_mud = LHand->world.translate - LWrist->world.translate;
+									RE::NiPoint3 RHand_down_to_mud = RHand->world.translate - RWrist->world.translate;
 									LFoot_down_to_mud = world_to_skin.rotate * LFoot_down_to_mud;
 									RFoot_down_to_mud = world_to_skin.rotate * RFoot_down_to_mud;
-									
+									LHand_down_to_mud = world_to_skin.rotate * LHand_down_to_mud;
+									RHand_down_to_mud = world_to_skin.rotate * RHand_down_to_mud;
 									float deform_positions[16];
 									deform_positions[4 * 0 + 0] = RFoot_to_mud.x;
 									deform_positions[4 * 0 + 1] = RFoot_to_mud.y;
@@ -305,20 +310,20 @@ void UpdateMudPhysics(RE::Actor* ref, float delta,uint64_t arg3,uint64_t arg4)
 									deform_vectors[4 * 1 + 1] = LFoot_down_to_mud.y;
 									deform_vectors[4 * 1 + 2] = LFoot_down_to_mud.z;
 									deform_vectors[4 * 1 + 3] = 0.0;
-									deform_vectors[4 * 2 + 0] = 0.0;
-									deform_vectors[4 * 2 + 1] = 0.0;
-									deform_vectors[4 * 2 + 2] = -1.0;
+									deform_vectors[4 * 2 + 0] = RHand_down_to_mud.x;
+									deform_vectors[4 * 2 + 1] = RHand_down_to_mud.y;
+									deform_vectors[4 * 2 + 2] = RHand_down_to_mud.z;
 									deform_vectors[4 * 2 + 3] = 0.0;
-									deform_vectors[4 * 3 + 0] = 0.0;
-									deform_vectors[4 * 3 + 1] = 0.0;
-									deform_vectors[4 * 3 + 2] = -1.0;
+									deform_vectors[4 * 3 + 0] = LHand_down_to_mud.x;
+									deform_vectors[4 * 3 + 1] = LHand_down_to_mud.y;
+									deform_vectors[4 * 3 + 2] = LHand_down_to_mud.z;
 									deform_vectors[4 * 3 + 3] = 0.0;
 									if (g_mudtimes.contains(ref->AsReference())) {
 										g_mudtimes.insert(std::pair(ref->AsReference(), 0.0f));
 										auto& mudinit = state.mudinit;
 										float& time = g_mudtimes.at(ref->AsReference());
 										time += 0.01666666f;
-										float sink = (fmod(time,30.0f)/30.0f)*1.5f;
+										float sink = 0.001f;
 										float frequency = mudinit.frequency;
 										state.mud_ffi = update_mud(state.mud_ffi, deform_positions, deform_vectors, (float*)mud_shape->GetGeometryRuntimeData().skinInstance->skinPartition->partitions[0].buffData->rawVertexData, sink, time, frequency, mudinit.wave_speed_time_per_meter,mudinit.chirp_multi);
 									}
@@ -347,6 +352,7 @@ void UpdateMudPhysics(RE::Actor* ref, float delta,uint64_t arg3,uint64_t arg4)
 										REL::safe_write((uintptr_t) & ((*(void***)RE::BSGraphics::Renderer::GetSingleton()->GetCurrentRenderWindow()->swapChain)[8]), &SwapPresentPtr, 8);
 									}
 									NewDeferredContext->UpdateSubresource(VB, 0, NULL, vertexdata, vertexCount * vertexSize, 0);
+									mud_shape->world.translate = mud_shape->GetGeometryRuntimeData().skinInstance->rootParent->world.translate;
 									//device->Release();
 									//RE::BSGraphics::Renderer::GetSingleton()->Unlock();
 								}
@@ -467,9 +473,9 @@ void AttachMudPhysics(RE::StaticFunctionTag*, RE::TESForm* obj, float falloff, f
 		mudinit.time = 0.0;
 
 		mudinit.falloff = falloff;
-		mudinit.max_vertical_dist = 2.0f;
+		mudinit.max_vertical_dist = 0.5f;
 		mudinit.sine_magnitude = sine_magnitude;
-		mudinit.vertical_offset = 0.25f;
+		mudinit.vertical_offset = 0.1f;
 		mudinit.min_dotprod = 0.7f;
 		mudinit.frequency = frequency;
 		mudinit.wave_speed_time_per_meter = wave_speed_time_per_meter;
