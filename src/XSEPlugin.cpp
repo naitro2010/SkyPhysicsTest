@@ -276,8 +276,8 @@ void UpdateMudPhysics(RE::Actor* ref, float delta,uint64_t arg3,uint64_t arg4)
 									RE::NiPoint3 LFoot_down_to_mud = LFoot->world.translate - LAnkle->world.translate;
 									RE::NiPoint3 RFoot_down_to_mud = RFoot->world.translate - RAnkle->world.translate;
 									
-									LFoot_down_to_mud = world_to_skin * LFoot_down_to_mud;
-									RFoot_down_to_mud = world_to_skin * RFoot_down_to_mud;
+									LFoot_down_to_mud = world_to_skin.rotate * LFoot_down_to_mud;
+									RFoot_down_to_mud = world_to_skin.rotate * RFoot_down_to_mud;
 									
 									float deform_positions[16];
 									deform_positions[4 * 0 + 0] = RFoot_to_mud.x;
