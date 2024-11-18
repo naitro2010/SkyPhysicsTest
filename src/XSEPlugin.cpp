@@ -301,9 +301,9 @@ void UpdateMudPhysics(RE::Actor* ref, float delta,uint64_t arg3,uint64_t arg4)
 									deform_vectors[4 * 0 + 1] = RFoot_down_to_mud.y;
 									deform_vectors[4 * 0 + 2] = RFoot_down_to_mud.z;
 									deform_vectors[4 * 0 + 3] = 0.0;
-									deform_vectors[4 * 0 + 0] = LFoot_down_to_mud.x;
-									deform_vectors[4 * 0 + 1] = LFoot_down_to_mud.y;
-									deform_vectors[4 * 0 + 2] = LFoot_down_to_mud.z;
+									deform_vectors[4 * 1 + 0] = LFoot_down_to_mud.x;
+									deform_vectors[4 * 1 + 1] = LFoot_down_to_mud.y;
+									deform_vectors[4 * 1 + 2] = LFoot_down_to_mud.z;
 									deform_vectors[4 * 1 + 3] = 0.0;
 									deform_vectors[4 * 2 + 0] = 0.0;
 									deform_vectors[4 * 2 + 1] = 0.0;
