@@ -112,10 +112,10 @@ void UpdateMudPhysics(RE::Actor* ref, float delta,uint64_t arg3,uint64_t arg4)
 	RE::NiAVObject *RFoot=ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("CME R Foot [Rft ]"));
 	RE::NiAVObject *RAnkle = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("NPC R Foot [Rft ]"));
 	RE::NiAVObject *LAnkle = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("NPC L Foot [Lft ]"));
-	RE::NiAVObject* RWrist = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("NPC R Hand [RHnd ]"));
-	RE::NiAVObject* LWrist = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("NPC L Hand [LHnd ]"));
-	RE::NiAVObject *LHand = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("CME L Hand [LHnd ]"));
-	RE::NiAVObject *RHand = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("CME R Hand [RHnd ]"));
+	RE::NiAVObject* RWrist = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("NPC R Hand [RHnd]"));
+	RE::NiAVObject* LWrist = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("NPC L Hand [LHnd]"));
+	RE::NiAVObject *LHand = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("CME L Hand [LHnd]"));
+	RE::NiAVObject *RHand = ref->Get3D1(false)->GetObjectByName(RE::BSFixedString("CME R Hand [RHnd]"));
 	
 	if (g_mudstate.contains(ref->AsReference())) {
 		MudDeformState &state = g_mudstate[ref->AsReference()];
